@@ -2,6 +2,16 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
+    <Authors>mao.miaoyan</Authors>
+    <Company>Starget</Company>
+    <Description>a web api client for easy to use http client.</Description>
+    <PackageProjectUrl>https://github.com/maomiaoyan/Starget.Http</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/maomiaoyan/Starget.Http.git</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <AssemblyVersion>1.0.1.0</AssemblyVersion>
+    <FileVersion>1.0.1.0</FileVersion>
+    <Version>1.0.1</Version>
   </PropertyGroup>
 
   <ItemGroup>

@@ -9,13 +9,13 @@ namespace Starget.Http.Client
 {
     public partial class ApiClient
     {
-        public async Task<FileResponse> DownloadFileByModelAsync<M,T>(M model,string url = null) where M : class where T:class,new()
+        public async Task<FileResponse> DownloadFileByModelAsync<T>(object model,string url = null) where T:class,new()
         {
             var request = ApiRequest.FromModel(model,RequestType.Get,url);
             return await DownloadFileAsync(request);
         }
 
-        public async Task<ApiResponse<T>> GetByModelAsync<M, T>(M model, string url = null, Func<object, HttpContent> serializeObjectCallBack = null, Func<HttpResponseMessage, T> deserializeObjectCallBack = null) where M : class where T : class, new()
+        public async Task<ApiResponse<T>> GetByModelAsync<T>(object model, string url = null, Func<object, HttpContent> serializeObjectCallBack = null, Func<HttpResponseMessage, T> deserializeObjectCallBack = null) where T : class, new()
         {
             var request = ApiRequest.FromModel(model,RequestType.Get, url);
             request.SerializeObjectCallBack = serializeObjectCallBack;
@@ -24,7 +24,7 @@ namespace Starget.Http.Client
             return response;
         }
 
-        public async Task<ApiResponse<T>> PostByModelAsync<M, T>(M model, string url = null, Func<object, HttpContent> serializeObjectCallBack = null, Func<HttpResponseMessage, T> deserializeObjectCallBack = null) where M : class where T : class, new()
+        public async Task<ApiResponse<T>> PostByModelAsync<T>(object model, string url = null, Func<object, HttpContent> serializeObjectCallBack = null, Func<HttpResponseMessage, T> deserializeObjectCallBack = null) where T : class, new()
         {
             var request = ApiRequest.FromModel(model,RequestType.Post, url);
             request.SerializeObjectCallBack = serializeObjectCallBack;
