@@ -73,7 +73,7 @@ namespace Starget.Http.Client
                 var message = await this.GetAsync(request.GetUrl());
                 await response.DeserializeMessageAsync(message, false, deserializeObjectCallBack);
             }
-            catch { }
+            catch { response.Data = null; }
 
             return response;
         }
@@ -104,7 +104,7 @@ namespace Starget.Http.Client
                 var message = await this.SendAsync(requestMessage);
                 await response.DeserializeMessageAsync(message, false, deserializeObjectCallBack);
             }
-            catch { }
+            catch { response.Data = null; }
 
             return response;
         }
