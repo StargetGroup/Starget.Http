@@ -9,26 +9,25 @@ namespace Starget.Http.Client
 {
     public partial class ApiClient
     {
-        public async Task<FileResponse> DownloadFileByModelAsync<T>(object model,string url = null) where T:class,new()
+        public async Task<FileResponse> DownloadFileByModelAsync<T>(object model,string url = null,ApiRequestBuildOption requestOption = null) where T:class,new()
         {
-            var request = ApiRequest.FromModel(model,RequestType.Get,url);
+
+            var request = ApiRequest.FromModel(model,url, requestOption??this.DefaultRquestBuildOption);
             return await DownloadFileAsync(request);
         }
 
-        public async Task<ApiResponse<T>> GetByModelAsync<T>(object model, string url = null, Func<object, HttpContent> serializeObjectCallBack = null, Func<HttpResponseMessage, T> deserializeObjectCallBack = null) where T : class, new()
+        public async Task<ApiResponse<T>> GetByModelAsync<T>(object model, string url = null, ApiRequestBuildOption requestOption = null, ApiResultBuildOption<T> resultOption = null) where T : class, new()
         {
-            var request = ApiRequest.FromModel(model,RequestType.Get, url);
-            request.SerializeObjectCallBack = serializeObjectCallBack;
-            var response = await this.GetAsync<T>(request, deserializeObjectCallBack);
+            var request = ApiRequest.FromModel(model, url, requestOption??this.DefaultRquestBuildOption);
+            var response = await this.GetAsync<T>(request, resultOption);
             response.SetModelStatus();
             return response;
         }
 
-        public async Task<ApiResponse<T>> PostByModelAsync<T>(object model, string url = null, Func<object, HttpContent> serializeObjectCallBack = null, Func<HttpResponseMessage, T> deserializeObjectCallBack = null) where T : class, new()
+        public async Task<ApiResponse<T>> PostByModelAsync<T>(object model, string url = null, ApiRequestBuildOption requestOption = null, ApiResultBuildOption<T> resultOption = null) where T : class, new()
         {
-            var request = ApiRequest.FromModel(model,RequestType.Post, url);
-            request.SerializeObjectCallBack = serializeObjectCallBack;
-            var response = await this.PostAsync<T>(request, deserializeObjectCallBack);
+            var request = ApiRequest.FromModel(model, url, requestOption??this.DefaultRquestBuildOption);
+            var response = await this.PostAsync<T>(request, resultOption);
             response.SetModelStatus();
             return response;
         }

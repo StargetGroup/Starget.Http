@@ -16,7 +16,6 @@ namespace Starget.Http.Client
     public class ApiRequest
     {
         public string Url { get; protected set; }
-        public RequestType RequestType { get; protected set; }
         public Dictionary<string, string> QueryStrings { get; protected set; } = new Dictionary<string, string>();
         public Dictionary<string, string> Headers { get; protected set; } = new Dictionary<string, string>();
         public StringBuilder JsonBuilder { get; set; } = new StringBuilder();
@@ -26,7 +25,7 @@ namespace Starget.Http.Client
         public List<FileContent> Files { get; protected set; } = new List<FileContent>();
         public Func<object, HttpContent> SerializeObjectCallBack { get; set; } = null;
 
-        public static ApiRequest FromModel<T>(T model,RequestType requestType,string url = null) where T : class
+        public static ApiRequest FromModel<T>(T model,string url = null,ApiRequestBuildOption option = null) where T : class
         {
             if (model == null)
             {
@@ -34,7 +33,7 @@ namespace Starget.Http.Client
             }
 
             var request = new ApiRequest();
-            request.ParseModel(model, requestType, url);
+            request.ParseModel(model, url, option);
             return request;
         }
 
@@ -52,22 +51,25 @@ namespace Starget.Http.Client
             return json;
         }
 
-        public void ParseModel(object model, RequestType requestType, string url = null)
+        public void ParseModel(object model, string url = null, ApiRequestBuildOption option = null)
         {
             if (model == null)
             {
                 return;
             }
 
-            this.RequestType = requestType;
-
             if (string.IsNullOrEmpty(url) == false)
             {
                 this.Url = url;
             }
 
+            if(option?.SerializeObjectCallBack != null)
+            {
+                this.SerializeObjectCallBack = option?.SerializeObjectCallBack;
+            }
+
             var type = model.GetType();
-            var defaultAttrType = ApiSerializeType.None;
+            var defaultAttrType = option?.DefaultSeralizeType??ApiSerializeType.None;
             var attrs = type.GetCustomAttributes(typeof(ApiQueryAttribute), true);
             defaultAttrType = attrs != null && attrs.Count() > 0 ? ApiSerializeType.FromQuery : defaultAttrType;
 
@@ -83,12 +85,7 @@ namespace Starget.Http.Client
                 defaultAttrType = attrs != null && attrs.Count() > 0 ? ApiSerializeType.FromForm : defaultAttrType;
             }
 
-            if (defaultAttrType == ApiSerializeType.None)
-            {
-                defaultAttrType = this.RequestType == RequestType.Get ? ApiSerializeType.FromQuery : ApiSerializeType.FromForm;
-            }
-
-            var defaultTextCaseType = ApiSerializeTextCaseType.None;
+            var defaultTextCaseType = option?.DefaultTextCaseType??ApiSerializeTextCaseType.None;
             if (defaultTextCaseType == 0)
             {
                 attrs = type.GetCustomAttributes(typeof(ApiCamelCaseAttribute), true);
@@ -124,7 +121,8 @@ namespace Starget.Http.Client
                 if (p.PropertyType.IsAssignableFrom(typeof(ISerializable)))
                 {
                     var request = new ApiRequest();
-                    request.ParseModel(value, this.RequestType, this.Url);
+                    
+                    request.ParseModel(value, this.Url, option);
 
                     this.Url = this.Url ?? request.Url;
 

@@ -17,6 +17,9 @@ namespace Starget.Http.Client
 
         public string Credentials { get; protected set; }
 
+        public ApiRequestBuildOption DefaultRquestBuildOption { get; set; }
+        public ApiResultBuildOption DefaultResultBuildOption { get; set; }
+
         public ApiClient(string baseAddress)
         {
             this.BaseAddress = new Uri(baseAddress);
@@ -65,13 +68,17 @@ namespace Starget.Http.Client
             return response;
         }
 
-        public async Task<ApiResponse<T>> GetAsync<T>(ApiRequest request, Func<HttpResponseMessage, T> deserializeObjectCallBack = null) where T : class,new()
+        public async Task<ApiResponse<T>> GetAsync<T>(ApiRequest request, ApiResultBuildOption<T> resultOption = null) where T : class,new()
         {
             var response = new ApiResponse<T>();
             try
             {
                 var message = await this.GetAsync(request.GetUrl());
-                await response.DeserializeMessageAsync(message, false, deserializeObjectCallBack);
+                if(resultOption == null && this.DefaultResultBuildOption != null)
+                {
+                    resultOption = ApiResultBuildOption<T>.Create(this.DefaultResultBuildOption);
+                }
+                await response.DeserializeMessageAsync(message, resultOption);
             }
             catch { response.Data = null; }
 
@@ -94,7 +101,7 @@ namespace Starget.Http.Client
             return response;
         }
 
-        public async Task<ApiResponse<T>> PostAsync<T>(ApiRequest request, Func<HttpResponseMessage, T> deserializeObjectCallBack = null) where T : class,new()
+        public async Task<ApiResponse<T>> PostAsync<T>(ApiRequest request, ApiResultBuildOption<T> resultOption = null) where T : class,new()
         {
             var requestMessage = request.GetRequestMessage();
             requestMessage.Method = HttpMethod.Post;
@@ -102,7 +109,11 @@ namespace Starget.Http.Client
             try
             {
                 var message = await this.SendAsync(requestMessage);
-                await response.DeserializeMessageAsync(message, false, deserializeObjectCallBack);
+                if (resultOption == null && this.DefaultResultBuildOption != null)
+                {
+                    resultOption = ApiResultBuildOption<T>.Create(this.DefaultResultBuildOption);
+                }
+                await response.DeserializeMessageAsync(message, resultOption);
             }
             catch { response.Data = null; }
 

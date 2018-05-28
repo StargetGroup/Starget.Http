@@ -32,26 +32,26 @@ namespace Starget.Http.Client
     {
         public T Data { get; set; }
 
-        public async Task DeserializeMessageAsync(HttpResponseMessage message, bool setModelStatus = false, Func<HttpResponseMessage, T> deserializeObjectCallBack = null)
+        public async Task DeserializeMessageAsync(HttpResponseMessage message, ApiResultBuildOption<T> resultOption = null)
         {
             await base.DeserializeMessageAsync(message);
             if (this.StatusIsSucceed)
             {
-                if(deserializeObjectCallBack != null)
+                if(resultOption?.DeserializeObjectCallBack != null)
                 {
-                    this.Data = deserializeObjectCallBack(message);
+                    this.Data = resultOption?.DeserializeObjectCallBack(message);
                 }
                 else
                 {
                     this.Data = JsonConvert.DeserializeObject<T>(this.Content);
                 }
 
-                if (setModelStatus)
+                if (resultOption?.SetModelStatus??false)
                 {
                     SetModelStatus();
                 }
             }
-            else if (setModelStatus)
+            else if (resultOption?.SetModelStatus ?? false)
             {
                 this.Data = new T();
                 SetModelStatus();
