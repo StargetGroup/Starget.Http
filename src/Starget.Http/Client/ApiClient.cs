@@ -17,8 +17,8 @@ namespace Starget.Http.Client
 
         public string Credentials { get; protected set; }
 
-        public ApiRequestBuildOption DefaultRquestBuildOption { get; set; }
-        public ApiResultBuildOption DefaultResultBuildOption { get; set; }
+        public ApiRequestBuildOption DefaultRquestBuildOption { get; set; } = new ApiRequestBuildOption();
+        public ApiResultBuildOption DefaultResultBuildOption { get; set; } = new ApiResultBuildOption();
 
         public ApiClient(string baseAddress)
         {

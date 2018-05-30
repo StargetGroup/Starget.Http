@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Reflection;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Threading;
@@ -69,28 +70,22 @@ namespace Starget.Http.Client
             }
 
             var type = model.GetType();
-            var defaultAttrType = option?.DefaultSeralizeType??ApiSerializeType.None;
-            var attrs = type.GetCustomAttributes(typeof(ApiQueryAttribute), true);
-            defaultAttrType = attrs != null && attrs.Count() > 0 ? ApiSerializeType.FromQuery : defaultAttrType;
-
-            if (defaultAttrType == ApiSerializeType.None)
+            var defaultLocationType = option?.DefaultLocationType ?? ApiSerializeLocationType.Ignore;
+            if (defaultLocationType == ApiSerializeLocationType.NotSet || defaultLocationType == ApiSerializeLocationType.Auto)
             {
-                attrs = type.GetCustomAttributes(typeof(ApiHeaderAttribute), true);
-                defaultAttrType = attrs != null && attrs.Count() > 0 ? ApiSerializeType.FromHeader : defaultAttrType;
+                defaultLocationType = ApiSerializeLocationType.Ignore;
             }
 
-            if (defaultAttrType == ApiSerializeType.None)
-            {
-                attrs = type.GetCustomAttributes(typeof(ApiFormAttribute), true);
-                defaultAttrType = attrs != null && attrs.Count() > 0 ? ApiSerializeType.FromForm : defaultAttrType;
-            }
+            defaultLocationType = GetSerializeLocationType(type, defaultLocationType);
+
 
             var defaultTextCaseType = option?.DefaultTextCaseType??ApiSerializeTextCaseType.None;
-            if (defaultTextCaseType == 0)
+            if (defaultTextCaseType == ApiSerializeTextCaseType.NotSet)
             {
-                attrs = type.GetCustomAttributes(typeof(ApiCamelCaseAttribute), true);
-                defaultTextCaseType = attrs != null && attrs.Count() > 0 ? ApiSerializeTextCaseType.CamelCase : defaultTextCaseType;
+                defaultTextCaseType = ApiSerializeTextCaseType.None;
             }
+
+            defaultTextCaseType = GetSerializeTextCaseType(type, defaultTextCaseType);
 
             StringWriter sw = new StringWriter(this.JsonBuilder);
             var jw = new JsonTextWriter(sw);
@@ -98,19 +93,15 @@ namespace Starget.Http.Client
             var properties = type.GetProperties();
             foreach (var p in properties)
             {
-                var attrType = ApiSerializeType.None;
-                var textCaseType = ApiSerializeTextCaseType.None;
-                attrs = p.GetCustomAttributes(typeof(ApiIgnoreAttribute), true);
-                if (attrs != null && attrs.Count() > 0)
+                var locationType = GetSerializeLocationType(p, defaultLocationType);
+                var textCaseType = GetSerializeTextCaseType(p,defaultTextCaseType);
+
+                if (locationType == ApiSerializeLocationType.Ignore)
                 {
                     continue;
                 }
 
                 var value = p.GetValue(model);
-
-                attrs = p.GetCustomAttributes(typeof(ApiCamelCaseAttribute), true);
-                textCaseType = attrs != null && attrs.Count() > 0 ? ApiSerializeTextCaseType.CamelCase : textCaseType;
-                textCaseType = textCaseType > 0 ? textCaseType : defaultTextCaseType;
 
                 var name = p.Name;
                 if (textCaseType == ApiSerializeTextCaseType.CamelCase)
@@ -145,6 +136,7 @@ namespace Starget.Http.Client
                     return;
                 }
 
+                object[] attrs;
                 if (this.Url == null)
                 {
                     attrs = p.GetCustomAttributes(typeof(ApiUrlAttribute), true);
@@ -155,33 +147,16 @@ namespace Starget.Http.Client
                     }
                 }
 
-                attrs = p.GetCustomAttributes(typeof(ApiQueryAttribute), true);
-                attrType = attrs != null && attrs.Count() > 0 ? ApiSerializeType.FromQuery : attrType;
-
-                if (attrType == ApiSerializeType.None)
-                {
-                    attrs = type.GetCustomAttributes(typeof(ApiHeaderAttribute), true);
-                    attrType = attrs != null && attrs.Count() > 0 ? ApiSerializeType.FromHeader : attrType;
-                }
-
-                if (attrType == ApiSerializeType.None)
-                {
-                    attrs = type.GetCustomAttributes(typeof(ApiFormAttribute), true);
-                    attrType = attrs != null && attrs.Count() > 0 ? ApiSerializeType.FromForm : attrType;
-                }
-
-                attrType = attrType > 0 ? attrType : defaultAttrType;
-
-                if (attrType == ApiSerializeType.FromQuery)
+                if (locationType == ApiSerializeLocationType.FromQuery)
                 {
                     this.AddQueryParameter(name, Convert.ToString(p.GetValue(model)));
                 }
-                else if (attrType == ApiSerializeType.FromHeader)
+                else if (locationType == ApiSerializeLocationType.FromHeader)
                 {
                     this.AddHeaderParameter(name, Convert.ToString(p.GetValue(model)));
                 }
 
-                else if (attrType == ApiSerializeType.FromForm)
+                else if (locationType == ApiSerializeLocationType.FromForm)
                 {
                     attrs = p.GetCustomAttributes(typeof(ApiFileAttribute), true);
                     if (attrs != null && attrs.Count() > 0)
@@ -226,6 +201,106 @@ namespace Starget.Http.Client
 
             jw.WriteEndObject();
 
+        }
+
+        private ApiSerializeLocationType GetSerializeLocationType(Type type,ApiSerializeLocationType defaultLocationType)
+        {
+            var locationType = ApiSerializeLocationType.NotSet;
+            var attrs = type.GetCustomAttributes(typeof(ApiQueryAttribute), true);
+            if (locationType == ApiSerializeLocationType.NotSet && attrs?.Count() > 0)
+            {
+                locationType = ApiSerializeLocationType.FromQuery;
+            }
+
+            attrs = type.GetCustomAttributes(typeof(ApiHeaderAttribute), true);
+            if (locationType == ApiSerializeLocationType.NotSet && attrs?.Count() > 0)
+            {
+                locationType = ApiSerializeLocationType.FromHeader;
+            }
+
+            attrs = type.GetCustomAttributes(typeof(ApiFormAttribute), true);
+            if (locationType == ApiSerializeLocationType.NotSet && attrs?.Count() > 0)
+            {
+                locationType = ApiSerializeLocationType.FromForm;
+            }
+
+            attrs = type.GetCustomAttributes(typeof(ApiIgnoreAttribute), true);
+            if (locationType == ApiSerializeLocationType.NotSet && attrs?.Count() > 0)
+            {
+                locationType = ApiSerializeLocationType.Ignore;
+            }
+
+            if (locationType == ApiSerializeLocationType.NotSet)
+            {
+                locationType = defaultLocationType;
+            }
+            return locationType;
+        }
+
+        private ApiSerializeTextCaseType GetSerializeTextCaseType(Type type, ApiSerializeTextCaseType defaultTextCaseType)
+        {
+            var textCaseType = ApiSerializeTextCaseType.NotSet;
+            var attrs = type.GetCustomAttributes(typeof(ApiCamelCaseAttribute), true);
+            if (textCaseType == ApiSerializeTextCaseType.NotSet && attrs?.Count() > 0)
+            {
+                textCaseType = ApiSerializeTextCaseType.CamelCase;
+            }
+
+            if (textCaseType == ApiSerializeTextCaseType.NotSet)
+            {
+                textCaseType = defaultTextCaseType;
+            }
+            return textCaseType;
+        }
+
+        private ApiSerializeLocationType GetSerializeLocationType(PropertyInfo type, ApiSerializeLocationType defaultLocationType)
+        {
+            var locationType = ApiSerializeLocationType.NotSet;
+            var attrs = type.GetCustomAttributes(typeof(ApiQueryAttribute), true);
+            if (locationType == ApiSerializeLocationType.NotSet && attrs?.Count() > 0)
+            {
+                locationType = ApiSerializeLocationType.FromQuery;
+            }
+
+            attrs = type.GetCustomAttributes(typeof(ApiHeaderAttribute), true);
+            if (locationType == ApiSerializeLocationType.NotSet && attrs?.Count() > 0)
+            {
+                locationType = ApiSerializeLocationType.FromHeader;
+            }
+
+            attrs = type.GetCustomAttributes(typeof(ApiFormAttribute), true);
+            if (locationType == ApiSerializeLocationType.NotSet && attrs?.Count() > 0)
+            {
+                locationType = ApiSerializeLocationType.FromForm;
+            }
+
+            attrs = type.GetCustomAttributes(typeof(ApiIgnoreAttribute), true);
+            if (locationType == ApiSerializeLocationType.NotSet && attrs?.Count() > 0)
+            {
+                locationType = ApiSerializeLocationType.Ignore;
+            }
+
+            if (locationType == ApiSerializeLocationType.NotSet)
+            {
+                locationType = defaultLocationType;
+            }
+            return locationType;
+        }
+
+        private ApiSerializeTextCaseType GetSerializeTextCaseType(PropertyInfo type, ApiSerializeTextCaseType defaultTextCaseType)
+        {
+            var textCaseType = ApiSerializeTextCaseType.NotSet;
+            var attrs = type.GetCustomAttributes(typeof(ApiCamelCaseAttribute), true);
+            if (textCaseType == ApiSerializeTextCaseType.NotSet && attrs?.Count() > 0)
+            {
+                textCaseType = ApiSerializeTextCaseType.CamelCase;
+            }
+
+            if (textCaseType == ApiSerializeTextCaseType.NotSet)
+            {
+                textCaseType = defaultTextCaseType;
+            }
+            return textCaseType;
         }
 
         public void AddQueryParameter(string key,string value)

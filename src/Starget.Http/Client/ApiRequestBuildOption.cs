@@ -6,12 +6,21 @@ using System.Text;
 
 namespace Starget.Http.Client
 {
-    public class ApiRequestBuildOption
+    public class ApiRequestBuildOption : ICloneable
     {
-        public ApiSerializeType DefaultSeralizeType { get; set; } = ApiSerializeType.None;
+        public ApiSerializeLocationType DefaultLocationType { get; set; } = ApiSerializeLocationType.NotSet;
         public ApiSerializeTextCaseType DefaultTextCaseType { get; set; } = ApiSerializeTextCaseType.None;
         public Func<object, HttpContent> SerializeObjectCallBack { get; set; }
         public JsonSerializerSettings JsonSerializerSettings { get; set; }
 
+        public object Clone()
+        {
+            ApiRequestBuildOption option = new ApiRequestBuildOption();
+            option.DefaultLocationType = this.DefaultLocationType;
+            option.DefaultTextCaseType = this.DefaultTextCaseType;
+            option.SerializeObjectCallBack = this.SerializeObjectCallBack;
+            option.JsonSerializerSettings = this.JsonSerializerSettings;
+            return option;
+        }
     }
 }

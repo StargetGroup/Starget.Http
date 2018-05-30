@@ -8,6 +8,7 @@ namespace Starget.Http.Client
 {
     public enum ApiSerializeTextCaseType
     {
+        NotSet = -1,
         None = 0,
         CamelCase = 1,
     }
