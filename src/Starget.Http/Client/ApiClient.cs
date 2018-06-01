@@ -61,7 +61,9 @@ namespace Starget.Http.Client
             var response = new ApiResponse();
             try
             {
-                var message = await this.GetAsync(request.GetUrl());
+                var task = this.GetAsync(request.GetUrl());
+                task.Wait();
+                var message = task.Result;
                 await response.DeserializeMessageAsync(message);
             }
             catch { }
@@ -74,8 +76,10 @@ namespace Starget.Http.Client
             var response = new ApiResponse<T>();
             try
             {
-                var message = await this.GetAsync(request.GetUrl());
-                if(resultOption == null && this.DefaultResultBuildOption != null)
+                var task = this.GetAsync(request.GetUrl());
+                task.Wait();
+                var message = task.Result;
+                if (resultOption == null && this.DefaultResultBuildOption != null)
                 {
                     resultOption = ApiResultBuildOption<T>.Create(this.DefaultResultBuildOption);
                 }
@@ -93,8 +97,9 @@ namespace Starget.Http.Client
             var response = new ApiResponse();
             try
             {
-                var message = await this.SendAsync(requestMessage);
-                
+                var task = this.SendAsync(requestMessage);
+                task.Wait();
+                var message = task.Result;
                 await response.DeserializeMessageAsync(message);
             }
             catch { }
@@ -109,7 +114,9 @@ namespace Starget.Http.Client
             var response = new ApiResponse<T>();
             try
             {
-                var message = await this.SendAsync(requestMessage);
+                var task = this.SendAsync(requestMessage);
+                task.Wait();
+                var message = task.Result;
                 if (resultOption == null && this.DefaultResultBuildOption != null)
                 {
                     resultOption = ApiResultBuildOption<T>.Create(this.DefaultResultBuildOption);
