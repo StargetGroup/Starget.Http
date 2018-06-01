@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -126,8 +127,45 @@ namespace Starget.Http.Client
 
             try
             {
-                var message = await this.GetAsync(request.GetUrl());
-                await response.DeserializeMessageAsync(message);
+                if(request.DownloadFileMode == DownloadFileMode.GetStream)
+                {
+                    var task = this.GetStreamAsync(request.GetUrl());
+                    task.Wait();
+                    var stream = task.Result;
+                    response = await FileResponse.FromStreamAsync(stream);
+                }
+                else if(request.DownloadFileMode == DownloadFileMode.GetByteArray)
+                {
+                    var task = this.GetByteArrayAsync(request.GetUrl());
+                    task.Wait();
+                    var bytes = task.Result;
+                    response = await FileResponse.FromBytesAsync(bytes);
+                }
+                else if(request.DownloadFileMode == DownloadFileMode.Get)
+                {
+                    var task = this.GetAsync(request.GetUrl());
+                    task.Wait();
+                    var message = task.Result;
+                    await response.DeserializeMessageAsync(message);
+                }
+                else if (request.DownloadFileMode == DownloadFileMode.Send)
+                {
+                    var requestMessage = request.GetRequestMessage();
+                    var task = this.SendAsync(requestMessage);
+                    task.Wait();
+                    var message = task.Result;
+                    await response.DeserializeMessageAsync(message);
+                    //Stream stream = await (await this.SendAsync(requestMessage).ConfigureAwait(false)).Content.ReadAsStreamAsync();
+                    //response = await FileResponse.FromStreamAsync(stream);
+                }
+                else if (request.DownloadFileMode == DownloadFileMode.String)
+                {
+                    var task = this.GetStringAsync(request.GetUrl());
+                    task.Wait();
+                    var str = task.Result;
+                    var bytes = Encoding.UTF8.GetBytes(str);
+                    response = await FileResponse.FromBytesAsync(bytes);
+                }
             }
             catch { }
 

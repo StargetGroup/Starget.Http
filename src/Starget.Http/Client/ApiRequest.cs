@@ -25,6 +25,7 @@ namespace Starget.Http.Client
         public JsonSerializerSettings JsonSerializerSettings { get; set; }
         public List<FileContent> Files { get; protected set; } = new List<FileContent>();
         public Func<object, HttpContent> SerializeObjectCallBack { get; set; } = null;
+        public DownloadFileMode DownloadFileMode { get; set; }
 
         public static ApiRequest FromModel<T>(T model,string url = null,ApiRequestBuildOption option = null) where T : class
         {
@@ -85,6 +86,12 @@ namespace Starget.Http.Client
                 defaultTextCaseType = ApiSerializeTextCaseType.None;
             }
 
+            this.DownloadFileMode = option?.DefaultDownloadFileMode ?? DownloadFileMode.Get;
+            if (DownloadFileMode == DownloadFileMode.NotSet)
+            {
+                DownloadFileMode = DownloadFileMode.Get;
+            }
+
             defaultTextCaseType = GetSerializeTextCaseType(type, defaultTextCaseType);
 
             StringWriter sw = new StringWriter(this.JsonBuilder);
@@ -93,6 +100,18 @@ namespace Starget.Http.Client
             var properties = type.GetProperties();
             foreach (var p in properties)
             {
+                object[] attrs;
+
+                if (this.Url == null)
+                {
+                    attrs = p.GetCustomAttributes(typeof(ApiUrlAttribute), true);
+                    if (attrs != null && attrs.Count() > 0)
+                    {
+                        this.Url = Convert.ToString(p.GetValue(model));
+                        continue;
+                    }
+                }
+
                 var locationType = GetSerializeLocationType(p, defaultLocationType);
                 var textCaseType = GetSerializeTextCaseType(p,defaultTextCaseType);
 
@@ -136,17 +155,6 @@ namespace Starget.Http.Client
                     return;
                 }
 
-                object[] attrs;
-                if (this.Url == null)
-                {
-                    attrs = p.GetCustomAttributes(typeof(ApiUrlAttribute), true);
-                    if (attrs != null && attrs.Count() > 0)
-                    {
-                        this.Url = Convert.ToString(p.GetValue(model));
-                        continue;
-                    }
-                }
-
                 if (locationType == ApiSerializeLocationType.FromQuery)
                 {
                     this.AddQueryParameter(name, Convert.ToString(p.GetValue(model)));
@@ -155,8 +163,7 @@ namespace Starget.Http.Client
                 {
                     this.AddHeaderParameter(name, Convert.ToString(p.GetValue(model)));
                 }
-
-                else if (locationType == ApiSerializeLocationType.FromForm)
+                else // if (locationType == ApiSerializeLocationType.FromForm)
                 {
                     attrs = p.GetCustomAttributes(typeof(ApiFileAttribute), true);
                     if (attrs != null && attrs.Count() > 0)
@@ -418,7 +425,7 @@ namespace Starget.Http.Client
 
             List<HttpContent> contents = new List<HttpContent>();
             var jsonBody = this.JsonBuilder.ToString();
-            if (string.IsNullOrEmpty(jsonBody) == false)
+            if (string.IsNullOrEmpty(jsonBody) == false && jsonBody != "{}")
             {
                 var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
                 contents.Add(content);

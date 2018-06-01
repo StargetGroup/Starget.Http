@@ -9,7 +9,7 @@ namespace Starget.Http.Client
 {
     public partial class ApiClient
     {
-        public async Task<FileResponse> DownloadFileByModelAsync<T>(object model,string url = null,ApiRequestBuildOption requestOption = null) where T:class,new()
+        public async Task<FileResponse> DownloadFileByModelAsync(object model,string url = null,ApiRequestBuildOption requestOption = null)
         {
             var reqOption = this.BuildRequestOption(requestOption);
             if(reqOption.DefaultLocationType == ApiSerializeLocationType.Auto)
@@ -64,6 +64,10 @@ namespace Starget.Http.Client
                 if (option.DefaultTextCaseType == ApiSerializeTextCaseType.NotSet)
                 {
                     option.DefaultTextCaseType = this.DefaultRquestBuildOption.DefaultTextCaseType;
+                }
+                if (option.DefaultDownloadFileMode == DownloadFileMode.NotSet)
+                {
+                    option.DefaultDownloadFileMode = this.DefaultRquestBuildOption.DefaultDownloadFileMode;
                 }
             }
 

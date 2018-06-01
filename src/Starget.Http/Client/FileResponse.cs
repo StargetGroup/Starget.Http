@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text;
@@ -24,6 +25,24 @@ namespace Starget.Http.Client
                     return null;
                 }
             }
+        }
+
+        public static async Task<FileResponse> FromStreamAsync(Stream stream)
+        {
+            MemoryStream ms = new MemoryStream();
+            await stream.CopyToAsync(ms);
+            FileResponse response = new FileResponse();
+            return await FromBytesAsync(ms.ToArray());
+        }
+
+        public static async Task<FileResponse> FromBytesAsync(byte[] bytes)
+        {
+            await Task.Delay(0);
+            FileResponse response = new FileResponse();
+            FileContent content = new FileContent();
+            content.Bytes = bytes;
+            response.Files.Add(content);
+            return response;
         }
 
         public override async Task DeserializeMessageAsync(HttpResponseMessage message)
