@@ -69,6 +69,10 @@ namespace Starget.Http.Client
                 {
                     option.DefaultDownloadFileMode = this.DefaultRquestBuildOption.DefaultDownloadFileMode;
                 }
+                if (option.DefaultEnumSerializeType == ApiEnumSerializeType.NotSet)
+                {
+                    option.DefaultEnumSerializeType = this.DefaultRquestBuildOption.DefaultEnumSerializeType;
+                }
             }
 
             return option;            

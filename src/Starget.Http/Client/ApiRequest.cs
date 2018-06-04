@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using Starget.Http.Helpers;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -20,7 +21,7 @@ namespace Starget.Http.Client
         public Dictionary<string, string> QueryStrings { get; protected set; } = new Dictionary<string, string>();
         public Dictionary<string, string> Headers { get; protected set; } = new Dictionary<string, string>();
         public StringBuilder JsonBuilder { get; set; } = new StringBuilder();
-        public Dictionary<string,string> Forms { get; protected set; } = new Dictionary<string, string>();
+        //public Dictionary<string,string> Forms { get; protected set; } = new Dictionary<string, string>();
         public List<object> Objects { get; protected set; } = new List<object>();
         public JsonSerializerSettings JsonSerializerSettings { get; set; }
         public List<FileContent> Files { get; protected set; } = new List<FileContent>();
@@ -49,8 +50,9 @@ namespace Starget.Http.Client
 
         public string GetJson()
         {
-            var json = JsonConvert.SerializeObject(this.Forms);
-            return json;
+            var jsonBody = this.JsonBuilder.ToString();
+            //var json = JsonConvert.SerializeObject(this.Forms);
+            return jsonBody;
         }
 
         public void ParseModel(object model, string url = null, ApiRequestBuildOption option = null)
@@ -86,13 +88,21 @@ namespace Starget.Http.Client
                 defaultTextCaseType = ApiSerializeTextCaseType.None;
             }
 
+            defaultTextCaseType = GetSerializeTextCaseType(type, defaultTextCaseType);
+
+            var defaultEnumSerializeType = option?.DefaultEnumSerializeType ?? ApiEnumSerializeType.Value;
+            if (defaultEnumSerializeType == ApiEnumSerializeType.NotSet)
+            {
+                defaultEnumSerializeType = ApiEnumSerializeType.Value;
+            }
+
+            defaultTextCaseType = GetSerializeTextCaseType(type, defaultTextCaseType);
+
             this.DownloadFileMode = option?.DefaultDownloadFileMode ?? DownloadFileMode.Get;
             if (DownloadFileMode == DownloadFileMode.NotSet)
             {
                 DownloadFileMode = DownloadFileMode.Get;
             }
-
-            defaultTextCaseType = GetSerializeTextCaseType(type, defaultTextCaseType);
 
             StringWriter sw = new StringWriter(this.JsonBuilder);
             var jw = new JsonTextWriter(sw);
@@ -121,6 +131,19 @@ namespace Starget.Http.Client
                 }
 
                 var value = p.GetValue(model);
+                string strValue = null;
+                if(p.PropertyType.IsEnum)
+                {
+                    var serizeType = GetEnumSerializeType(p, defaultEnumSerializeType);
+                    if(serizeType == ApiEnumSerializeType.Name)
+                    {
+                        strValue = Convert.ToString(value);
+                    }
+                    else
+                    {
+                        strValue = EnumHelper.Serialize(value);
+                    }
+                }
 
                 var name = p.Name;
                 if (textCaseType == ApiSerializeTextCaseType.CamelCase)
@@ -152,16 +175,30 @@ namespace Starget.Http.Client
                         jw.WritePropertyName(name);
                         jw.WriteRawValue(childJson);
                     }
+
+                    foreach(var d in request.Objects)
+                    {
+                        var obj = d as ISerializable;
+                        if(obj != null)
+                        {
+                            this.AddObject(obj);
+                        }
+                    }
+
+                    foreach(var file in request.Files)
+                    {
+                        this.AddFile(file.Name, file.FileName, file.Bytes);
+                    }
                     return;
                 }
 
                 if (locationType == ApiSerializeLocationType.FromQuery)
                 {
-                    this.AddQueryParameter(name, Convert.ToString(p.GetValue(model)));
+                    this.AddQueryParameter(name, strValue ?? Convert.ToString(value));
                 }
                 else if (locationType == ApiSerializeLocationType.FromHeader)
                 {
-                    this.AddHeaderParameter(name, Convert.ToString(p.GetValue(model)));
+                    this.AddHeaderParameter(name, strValue ?? Convert.ToString(value));
                 }
                 else // if (locationType == ApiSerializeLocationType.FromForm)
                 {
@@ -308,6 +345,23 @@ namespace Starget.Http.Client
                 textCaseType = defaultTextCaseType;
             }
             return textCaseType;
+        }
+
+        private ApiEnumSerializeType GetEnumSerializeType(PropertyInfo type, ApiEnumSerializeType defaultTextCaseType)
+        {
+            var enumSerializeType = ApiEnumSerializeType.NotSet;
+            var attrs = type.GetCustomAttributes(typeof(ApiEnumAttribute), true);
+            if (enumSerializeType == ApiEnumSerializeType.NotSet && attrs?.Count() > 0)
+            {
+                var attr = attrs[0] as ApiEnumAttribute;
+                enumSerializeType = attr.SerializeType;
+            }
+
+            if (enumSerializeType == ApiEnumSerializeType.NotSet)
+            {
+                enumSerializeType = defaultTextCaseType;
+            }
+            return enumSerializeType;
         }
 
         public void AddQueryParameter(string key,string value)
