@@ -8,14 +8,24 @@
     <PackageProjectUrl>https://github.com/maomiaoyan/Starget.Http</PackageProjectUrl>
     <RepositoryUrl>https://github.com/maomiaoyan/Starget.Http.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <AssemblyVersion>1.0.6.0</AssemblyVersion>
     <FileVersion>1.0.6.0</FileVersion>
     <Version>1.0.6</Version>
+    <Copyright>Copyright (C) 2018</Copyright>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <WarningLevel>3</WarningLevel>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Properties\" />
   </ItemGroup>
 
 </Project>
