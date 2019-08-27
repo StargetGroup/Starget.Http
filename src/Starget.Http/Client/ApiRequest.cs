@@ -41,7 +41,10 @@ namespace Starget.Http.Client
         }
 
         public ApiRequest() :this(null)
-        {}
+        {
+            var nm = System.Text.RegularExpressions.Regex.Replace(this.GetType().Name, "Request$", "");
+            this.Url = nm;
+        }
 
         public ApiRequest(string url)
         {

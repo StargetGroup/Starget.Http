@@ -53,25 +53,25 @@ namespace Starget.Http.Client
             var option = requestOption?.Clone() as ApiRequestBuildOption;
             if(option == null)
             {
-                option = this.DefaultRquestBuildOption?.Clone() as ApiRequestBuildOption;
+                option = this.DefaultRequestBuildOption?.Clone() as ApiRequestBuildOption;
             }
-            else if(this.DefaultRquestBuildOption != null)
+            else if(this.DefaultRequestBuildOption != null)
             {
                 if(option.DefaultLocationType == ApiSerializeLocationType.NotSet)
                 {
-                    option.DefaultLocationType = this.DefaultRquestBuildOption.DefaultLocationType;
+                    option.DefaultLocationType = this.DefaultRequestBuildOption.DefaultLocationType;
                 }
                 if (option.DefaultTextCaseType == ApiSerializeTextCaseType.NotSet)
                 {
-                    option.DefaultTextCaseType = this.DefaultRquestBuildOption.DefaultTextCaseType;
+                    option.DefaultTextCaseType = this.DefaultRequestBuildOption.DefaultTextCaseType;
                 }
                 if (option.DefaultDownloadFileMode == DownloadFileMode.NotSet)
                 {
-                    option.DefaultDownloadFileMode = this.DefaultRquestBuildOption.DefaultDownloadFileMode;
+                    option.DefaultDownloadFileMode = this.DefaultRequestBuildOption.DefaultDownloadFileMode;
                 }
                 if (option.DefaultEnumSerializeType == ApiEnumSerializeType.NotSet)
                 {
-                    option.DefaultEnumSerializeType = this.DefaultRquestBuildOption.DefaultEnumSerializeType;
+                    option.DefaultEnumSerializeType = this.DefaultRequestBuildOption.DefaultEnumSerializeType;
                 }
             }
 
@@ -85,7 +85,7 @@ namespace Starget.Http.Client
             {
                 option = ApiResultBuildOption<T>.Create(this.DefaultResultBuildOption);
             }
-            else if (this.DefaultRquestBuildOption != null)
+            else if (this.DefaultRequestBuildOption != null)
             {
 
             }

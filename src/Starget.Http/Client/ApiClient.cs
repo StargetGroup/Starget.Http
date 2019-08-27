@@ -18,7 +18,7 @@ namespace Starget.Http.Client
 
         public string Credentials { get; protected set; }
 
-        public ApiRequestBuildOption DefaultRquestBuildOption { get; set; } = new ApiRequestBuildOption();
+        public ApiRequestBuildOption DefaultRequestBuildOption { get; set; } = new ApiRequestBuildOption();
         public ApiResultBuildOption DefaultResultBuildOption { get; set; } = new ApiResultBuildOption();
 
         public ApiClient(string baseAddress)
@@ -90,6 +90,40 @@ namespace Starget.Http.Client
             return response;
         }
 
+        public async Task<ApiResponse> GetByUrlAsync(string url)
+        {
+            var response = new ApiResponse();
+            try
+            {
+                var task = this.GetAsync(url);
+                task.Wait();
+                var message = task.Result;
+                await response.DeserializeMessageAsync(message);
+            }
+            catch { }
+
+            return response;
+        }
+
+        public async Task<ApiResponse<T>> GetByUrlAsync<T>(string url, ApiResultBuildOption<T> resultOption = null) where T : class, new()
+        {
+            var response = new ApiResponse<T>();
+            try
+            {
+                var task = this.GetAsync(url);
+                task.Wait();
+                var message = task.Result;
+                if (resultOption == null && this.DefaultResultBuildOption != null)
+                {
+                    resultOption = ApiResultBuildOption<T>.Create(this.DefaultResultBuildOption);
+                }
+                await response.DeserializeMessageAsync(message, resultOption);
+            }
+            catch { response.Data = null; }
+
+            return response;
+        }
+
         public async Task<ApiResponse> PostAsync(ApiRequest request)
         {
             var requestMessage = request.GetRequestMessage();
@@ -110,6 +144,46 @@ namespace Starget.Http.Client
         public async Task<ApiResponse<T>> PostAsync<T>(ApiRequest request, ApiResultBuildOption<T> resultOption = null) where T : class,new()
         {
             var requestMessage = request.GetRequestMessage();
+            requestMessage.Method = HttpMethod.Post;
+            var response = new ApiResponse<T>();
+            try
+            {
+                var task = this.SendAsync(requestMessage);
+                task.Wait();
+                var message = task.Result;
+                if (resultOption == null && this.DefaultResultBuildOption != null)
+                {
+                    resultOption = ApiResultBuildOption<T>.Create(this.DefaultResultBuildOption);
+                }
+                await response.DeserializeMessageAsync(message, resultOption);
+            }
+            catch { response.Data = null; }
+
+            return response;
+        }
+
+        public async Task<ApiResponse> PostByUrlAsync(string url)
+        {
+            HttpRequestMessage requestMessage = new HttpRequestMessage();
+            requestMessage.RequestUri = new Uri(url);
+            requestMessage.Method = HttpMethod.Post;
+            var response = new ApiResponse();
+            try
+            {
+                var task = this.SendAsync(requestMessage);
+                task.Wait();
+                var message = task.Result;
+                await response.DeserializeMessageAsync(message);
+            }
+            catch { }
+
+            return response;
+        }
+
+        public async Task<ApiResponse<T>> PostByUrlAsync<T>(string url, ApiResultBuildOption<T> resultOption = null) where T : class, new()
+        {
+            HttpRequestMessage requestMessage = new HttpRequestMessage();
+            requestMessage.RequestUri = new Uri(url);
             requestMessage.Method = HttpMethod.Post;
             var response = new ApiResponse<T>();
             try
@@ -177,6 +251,14 @@ namespace Starget.Http.Client
             catch { }
 
             return response;
+        }
+
+        public async Task<FileResponse> DownloadFileByUrlAsync(string url, DownloadFileMode mode = DownloadFileMode.GetStream)
+        {
+            var response = new FileResponse();
+            var request = new ApiRequest(url);
+            request.DownloadFileMode = mode;
+            return await DownloadFileAsync(request);
         }
     }
 }
