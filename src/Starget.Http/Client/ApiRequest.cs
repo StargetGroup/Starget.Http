@@ -17,7 +17,7 @@ namespace Starget.Http.Client
 {
     public class ApiRequest
     {
-        public string Url { get; protected set; }
+        public string ApiUrl { get; set; }
         public Dictionary<string, string> QueryStrings { get; protected set; } = new Dictionary<string, string>();
         public Dictionary<string, string> Headers { get; protected set; } = new Dictionary<string, string>();
         public StringBuilder JsonBuilder { get; set; } = new StringBuilder();
@@ -42,13 +42,18 @@ namespace Starget.Http.Client
 
         public ApiRequest() :this(null)
         {
-            var nm = System.Text.RegularExpressions.Regex.Replace(this.GetType().Name, "Request$", "");
-            this.Url = nm;
+            var nm = this.GetType().Name;
+            if(nm.EndsWith("Request"))
+            {
+                nm = nm.Substring(0,nm.LastIndexOf("Request"));
+            }
+
+            this.ApiUrl = nm;
         }
 
         public ApiRequest(string url)
         {
-            this.Url = url;
+            this.ApiUrl = url;
         }
 
         public string GetJson()
@@ -67,7 +72,7 @@ namespace Starget.Http.Client
 
             if (string.IsNullOrEmpty(url) == false)
             {
-                this.Url = url;
+                this.ApiUrl = url;
             }
 
             if(option?.SerializeObjectCallBack != null)
@@ -115,14 +120,16 @@ namespace Starget.Http.Client
             {
                 object[] attrs;
 
-                if (this.Url == null)
+                attrs = p.GetCustomAttributes(typeof(ApiUrlAttribute), true);
+                if (attrs != null && attrs.Count() > 0)
                 {
-                    attrs = p.GetCustomAttributes(typeof(ApiUrlAttribute), true);
-                    if (attrs != null && attrs.Count() > 0)
+                    var apiUrl = Convert.ToString(p.GetValue(model));
+                    if(ApiUrl != null)
                     {
-                        this.Url = Convert.ToString(p.GetValue(model));
-                        continue;
+                        this.ApiUrl = apiUrl;
                     }
+
+                    continue;
                 }
 
                 var locationType = GetSerializeLocationType(p, defaultLocationType);
@@ -158,9 +165,9 @@ namespace Starget.Http.Client
                 {
                     var request = new ApiRequest();
                     
-                    request.ParseModel(value, this.Url, option);
+                    request.ParseModel(value, this.ApiUrl, option);
 
-                    this.Url = this.Url ?? request.Url;
+                    this.ApiUrl = request.ApiUrl;
 
                     foreach (var key in request.QueryStrings.Keys)
                     {
@@ -462,7 +469,7 @@ namespace Starget.Http.Client
 
         public string GetUrl()
         {
-            string url = this.Url;
+            string url = this.ApiUrl;
             string query = GetQueryString();
             if(string.IsNullOrEmpty(query) == false)
             {

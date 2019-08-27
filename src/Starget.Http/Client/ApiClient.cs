@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -61,8 +62,8 @@ namespace Starget.Http.Client
             var response = new ApiResponse();
             try
             {
-                var task = this.GetAsync(request.GetUrl());
-                task.Wait();
+                var url = request.GetUrl();
+                var task = this.GetAsync(url);
                 var message = task.Result;
                 await response.DeserializeMessageAsync(message);
             }
@@ -76,8 +77,9 @@ namespace Starget.Http.Client
             var response = new ApiResponse<T>();
             try
             {
+
                 var task = this.GetAsync(request.GetUrl());
-                task.Wait();
+
                 var message = task.Result;
                 if (resultOption == null && this.DefaultResultBuildOption != null)
                 {
