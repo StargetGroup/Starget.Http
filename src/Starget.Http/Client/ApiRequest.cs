@@ -84,6 +84,16 @@ namespace Starget.Http.Client
             {
                 this.ApiUrl = url;
             }
+            else
+            {
+                var nm = model.GetType().Name;
+
+                if (nm.EndsWith("Request"))
+                {
+                    nm = nm.Substring(0, nm.LastIndexOf("Request"));
+                }
+                this.ApiUrl = nm;
+            }
 
             if(option?.SerializeObjectCallBack != null)
             {
