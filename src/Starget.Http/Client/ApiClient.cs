@@ -59,10 +59,15 @@ namespace Starget.Http.Client
 
         public async Task<ApiResponse> GetAsync(ApiRequest request)
         {
+            return await GetAsync(request, null);
+        }
+
+        public async Task<ApiResponse> GetAsync(ApiRequest request, string controllerUrl)
+        {
             var response = new ApiResponse();
             try
             {
-                var url = request.GetUrl();
+                var url = request.GetUrl(controllerUrl);
                 var task = this.GetAsync(url);
                 var message = task.Result;
                 await response.DeserializeMessageAsync(message);
@@ -72,13 +77,18 @@ namespace Starget.Http.Client
             return response;
         }
 
-        public async Task<ApiResponse<T>> GetAsync<T>(ApiRequest request, ApiResultBuildOption<T> resultOption = null) where T : class,new()
+        public async Task<ApiResponse<T>> GetAsync<T>(ApiRequest request, ApiResultBuildOption<T> resultOption = null) where T : class, new()
+        {
+            return await GetAsync<T>(request, null, resultOption);
+        }
+
+        public async Task<ApiResponse<T>> GetAsync<T>(ApiRequest request,string controllerUrl, ApiResultBuildOption<T> resultOption = null) where T : class,new()
         {
             var response = new ApiResponse<T>();
             try
             {
 
-                var task = this.GetAsync(request.GetUrl());
+                var task = this.GetAsync(request.GetUrl(controllerUrl));
 
                 var message = task.Result;
                 if (resultOption == null && this.DefaultResultBuildOption != null)
@@ -106,7 +116,6 @@ namespace Starget.Http.Client
 
             return response;
         }
-
         public async Task<ApiResponse<T>> GetByUrlAsync<T>(string url, ApiResultBuildOption<T> resultOption = null) where T : class, new()
         {
             var response = new ApiResponse<T>();
@@ -128,7 +137,12 @@ namespace Starget.Http.Client
 
         public async Task<ApiResponse> PostAsync(ApiRequest request)
         {
-            var requestMessage = request.GetRequestMessage();
+            return await PostAsync(request, null);
+        }
+
+        public async Task<ApiResponse> PostAsync(ApiRequest request, string controllerUrl)
+        {
+            var requestMessage = request.GetRequestMessage(controllerUrl);
             requestMessage.Method = HttpMethod.Post;
             var response = new ApiResponse();
             try
@@ -143,9 +157,14 @@ namespace Starget.Http.Client
             return response;
         }
 
-        public async Task<ApiResponse<T>> PostAsync<T>(ApiRequest request, ApiResultBuildOption<T> resultOption = null) where T : class,new()
+        public async Task<ApiResponse<T>> PostAsync<T>(ApiRequest request, ApiResultBuildOption<T> resultOption = null) where T : class, new()
         {
-            var requestMessage = request.GetRequestMessage();
+            return await PostAsync<T>(request, null, null);
+        }
+
+        public async Task<ApiResponse<T>> PostAsync<T>(ApiRequest request, string controllerUrl, ApiResultBuildOption<T> resultOption = null) where T : class,new()
+        {
+            var requestMessage = request.GetRequestMessage(controllerUrl);
             requestMessage.Method = HttpMethod.Post;
             var response = new ApiResponse<T>();
             try
@@ -181,7 +200,6 @@ namespace Starget.Http.Client
 
             return response;
         }
-
         public async Task<ApiResponse<T>> PostByUrlAsync<T>(string url, ApiResultBuildOption<T> resultOption = null) where T : class, new()
         {
             HttpRequestMessage requestMessage = new HttpRequestMessage();
@@ -204,7 +222,7 @@ namespace Starget.Http.Client
             return response;
         }
 
-        public async Task<FileResponse> DownloadFileAsync(ApiRequest request)
+        public async Task<FileResponse> DownloadFileAsync(ApiRequest request,string controllerUrl = null)
         {
             var response = new FileResponse();
 
@@ -212,28 +230,28 @@ namespace Starget.Http.Client
             {
                 if(request.DownloadFileMode == DownloadFileMode.GetStream)
                 {
-                    var task = this.GetStreamAsync(request.GetUrl());
+                    var task = this.GetStreamAsync(request.GetUrl(controllerUrl));
                     task.Wait();
                     var stream = task.Result;
                     response = await FileResponse.FromStreamAsync(stream);
                 }
                 else if(request.DownloadFileMode == DownloadFileMode.GetByteArray)
                 {
-                    var task = this.GetByteArrayAsync(request.GetUrl());
+                    var task = this.GetByteArrayAsync(request.GetUrl(controllerUrl));
                     task.Wait();
                     var bytes = task.Result;
                     response = await FileResponse.FromBytesAsync(bytes);
                 }
                 else if(request.DownloadFileMode == DownloadFileMode.Get)
                 {
-                    var task = this.GetAsync(request.GetUrl());
+                    var task = this.GetAsync(request.GetUrl(controllerUrl));
                     task.Wait();
                     var message = task.Result;
                     await response.DeserializeMessageAsync(message);
                 }
                 else if (request.DownloadFileMode == DownloadFileMode.Send)
                 {
-                    var requestMessage = request.GetRequestMessage();
+                    var requestMessage = request.GetRequestMessage(controllerUrl);
                     var task = this.SendAsync(requestMessage);
                     task.Wait();
                     var message = task.Result;
@@ -243,7 +261,7 @@ namespace Starget.Http.Client
                 }
                 else if (request.DownloadFileMode == DownloadFileMode.String)
                 {
-                    var task = this.GetStringAsync(request.GetUrl());
+                    var task = this.GetStringAsync(request.GetUrl(controllerUrl));
                     task.Wait();
                     var str = task.Result;
                     var bytes = Encoding.UTF8.GetBytes(str);

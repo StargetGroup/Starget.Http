@@ -28,7 +28,11 @@ namespace Starget.Http.Client
         public Func<object, HttpContent> SerializeObjectCallBack { get; set; } = null;
         public DownloadFileMode DownloadFileMode { get; set; }
 
-        public static ApiRequest FromModel<T>(T model,string url = null,ApiRequestBuildOption option = null) where T : class
+        public static ApiRequest FromModel<T>(T model,  string url = null, ApiRequestBuildOption option = null) where T : class
+        {
+            return FromModel(model, url, null);
+        }
+        public static ApiRequest FromModel<T>(T model,string controllerUrl,string url = null,ApiRequestBuildOption option = null) where T : class
         {
             if (model == null)
             {
@@ -42,11 +46,17 @@ namespace Starget.Http.Client
 
         public ApiRequest() :this(null)
         {
-            var nm = this.GetType().Name;
-            if(nm.EndsWith("Request"))
+            string nm = null;
+            if (this.GetType().Equals(typeof(ApiRequest)) == false)
             {
-                nm = nm.Substring(0,nm.LastIndexOf("Request"));
+                nm = this.GetType().Name;
+
+                if (nm.EndsWith("Request"))
+                {
+                    nm = nm.Substring(0, nm.LastIndexOf("Request"));
+                }
             }
+
 
             this.ApiUrl = nm;
         }
@@ -467,7 +477,7 @@ namespace Starget.Http.Client
             return str;
         }
 
-        public string GetUrl()
+        public string GetUrl(string controllerUrl = null)
         {
             string url = this.ApiUrl;
             string query = GetQueryString();
@@ -475,13 +485,27 @@ namespace Starget.Http.Client
             {
                 url = url + "?" + query;
             }
+            if(string.IsNullOrEmpty(controllerUrl) == false)
+            {
+                url = CombineUrl(controllerUrl, url);
+            }
             return url;
         }
 
-        public virtual HttpRequestMessage GetRequestMessage()
+        public static string CombineUrl(string url1,string url2)
+        {
+            Uri uri = new Uri(url2);
+            if(uri.IsAbsoluteUri)
+            {
+                return url2;
+            }
+            return url1.Trim('/') + "/" + url2.TrimStart('/');
+        }
+
+        public virtual HttpRequestMessage GetRequestMessage(string controllerUrl = null)
         {
             HttpRequestMessage request = new HttpRequestMessage();
-            request.RequestUri = new Uri(this.GetUrl(),UriKind.RelativeOrAbsolute);
+            request.RequestUri = new Uri(this.GetUrl(controllerUrl),UriKind.RelativeOrAbsolute);
             foreach(var key in this.Headers.Keys)
             {
                 request.Headers.Add(key, this.Headers[key]);

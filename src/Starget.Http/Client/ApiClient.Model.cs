@@ -9,7 +9,11 @@ namespace Starget.Http.Client
 {
     public partial class ApiClient
     {
-        public async Task<FileResponse> DownloadFileByModelAsync(object model,string url = null,ApiRequestBuildOption requestOption = null)
+        public async Task<FileResponse> DownloadFileByModelAsync(object model, string url = null, ApiRequestBuildOption requestOption = null)
+        {
+            return await DownloadFileByModelAsync(model, null, url, requestOption);
+        }
+        public async Task<FileResponse> DownloadFileByModelAsync(object model,string controllerUrl,string url = null,ApiRequestBuildOption requestOption = null)
         {
             var reqOption = this.BuildRequestOption(requestOption);
             if(reqOption.DefaultLocationType == ApiSerializeLocationType.Auto)
@@ -17,10 +21,16 @@ namespace Starget.Http.Client
                 reqOption.DefaultLocationType = ApiSerializeLocationType.FromQuery;
             }
             var request = ApiRequest.FromModel(model,url, reqOption);
+            request.ApiUrl = ApiRequest.CombineUrl(controllerUrl, request.ApiUrl);
             return await DownloadFileAsync(request);
         }
 
         public async Task<ApiResponse<T>> GetByModelAsync<T>(object model, string url = null, ApiRequestBuildOption requestOption = null, ApiResultBuildOption<T> resultOption = null) where T : class, new()
+        {
+            return await GetByModelAsync(model, null, url, requestOption, resultOption);
+        }
+
+        public async Task<ApiResponse<T>> GetByModelAsync<T>(object model, string controllerUrl, string url = null, ApiRequestBuildOption requestOption = null, ApiResultBuildOption<T> resultOption = null) where T : class, new()
         {
             var reqOption = this.BuildRequestOption(requestOption);
             if (reqOption.DefaultLocationType == ApiSerializeLocationType.Auto)
@@ -29,12 +39,18 @@ namespace Starget.Http.Client
             }
             var resOption = this.BuildResultOption(resultOption);
             var request = ApiRequest.FromModel(model, url, reqOption);
+            request.ApiUrl = ApiRequest.CombineUrl(controllerUrl, request.ApiUrl);
             var response = await this.GetAsync<T>(request, resOption);
             response.SetModelStatus();
             return response;
         }
 
         public async Task<ApiResponse<T>> PostByModelAsync<T>(object model, string url = null, ApiRequestBuildOption requestOption = null, ApiResultBuildOption<T> resultOption = null) where T : class, new()
+        {
+            return await PostByModelAsync(model, null, url, requestOption, resultOption);
+        }
+
+        public async Task<ApiResponse<T>> PostByModelAsync<T>(object model, string controllerUrl, string url = null, ApiRequestBuildOption requestOption = null, ApiResultBuildOption<T> resultOption = null) where T : class, new()
         {
             var reqOption = this.BuildRequestOption(requestOption);
             if (reqOption.DefaultLocationType == ApiSerializeLocationType.Auto)
@@ -43,6 +59,7 @@ namespace Starget.Http.Client
             }
             var resOption = this.BuildResultOption(resultOption);
             var request = ApiRequest.FromModel(model, url, reqOption);
+            request.ApiUrl = ApiRequest.CombineUrl(controllerUrl, request.ApiUrl);
             var response = await this.PostAsync<T>(request, resOption);
             response.SetModelStatus();
             return response;
